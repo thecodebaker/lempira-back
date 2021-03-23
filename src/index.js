@@ -40,7 +40,7 @@ app.use(morgan('combined', { stream: accessLogStream }));
 
 app.use('/auth', auth);
 
-app.use(middlewares.NotFound)
+app.use(middlewares.NotFound);
 
 app.listen(PORT, () => {
   console.log(`El app empezo en el puerto: ${PORT}`);
