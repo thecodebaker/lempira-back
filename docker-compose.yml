@@ -1,0 +1,21 @@
+version: "3.8"
+services:
+  server:
+    build: .
+    ports:
+      - "1217:1217"
+    volumes:
+      - ./logs:/usr/src/server/logs
+    depends_on:
+      - mongo
+  mongo:
+    image: "mongo"
+    environment:
+      MONGO_INITDB_DATABASE: "lempira"
+      MONGO_INITDB_ROOT_USERNAME: "root"
+      MONGO_INITDB_ROOT_PASSWORD: "406c422e12c42f715ab8afcee45563ee6afa4d40"
+    volumes:
+      - ./init-mongo.js:/docker-entrypoint-initdb.d/init-mongo.js:ro
+      - ./mongo-volume:/data/db
+    ports:
+      - "27017-27019:27017-27019"
