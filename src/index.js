@@ -5,6 +5,7 @@ const path = require('path');
 const morgan = require('morgan');
 const mongoose = require('mongoose');
 const rfs = require('rotating-file-stream');
+const accounts = require('./routers/accounts.router');
 const auth = require('./routers/auth.router');
 const middlewares = require('./middlewares');
 
@@ -19,7 +20,7 @@ mongoose.connect(
   },
   (err) => {
     if (!err) {
-      console.log('Listo');
+      console.log('conexión con Mongo Exitosa');
     } else {
       console.error(err);
     }
@@ -39,6 +40,7 @@ const accessLogStream = rfs.createStream('access.log', {
 app.use(morgan('combined', { stream: accessLogStream }));
 
 app.use('/auth', auth);
+app.use('/accounts', accounts);
 
 app.use(middlewares.NotFound);
 
