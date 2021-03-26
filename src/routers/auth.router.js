@@ -27,7 +27,11 @@ router.post('/login', (req, res, next) => {
     if (bcrypt.compareSync(password, doc.password)) {
       jwt.sign({ email }, secret, (err, hash) => {
         if (err) next(err);
-        res.json({ success: true, name: doc.name, token: hash });
+        res.json({
+          success: true,
+          name: doc.name,
+          token: hash,
+        });
       });
     } else {
       res.status(401).json({ success: false });
