@@ -15,40 +15,43 @@ router.get('/', (req, res, next) => {
     .then(async (userAccounts) => {
       const cleanedAccounts = await Promise.all(
         userAccounts.map(async (doc) => {
-          const movement = await movements.findOne(
+          const movimientos = await movements.find(
             { accountId: doc._id },
             {},
-            { sort: { createdAt: -1 } }
+            { sort: { createdAt: 1 } }
           );
-          return {
-            name: doc.name,
+          return movimientos.map((move) => ({
             currency: doc.currency,
+            accountName: doc.name,
             accountId: doc._id,
-            movement,
-          };
+            movementId: move._id,
+            ...move.toJSON(),
+          }));
         })
       );
-      res.status(200).json({ success: true, accounts: cleanedAccounts });
+      const cleanedMovements = cleanedAccounts.reduce(
+        (t, m) => [...t, ...m],
+        []
+      );
+      res.status(200).json({ success: true, movements: cleanedMovements });
     })
     .catch(next);
 });
 
 router.post('/', (req, res, next) => {
-  const { _id } = req.user;
-  const { name, currency, amount, isIncome } = req.body;
-  accounts
-    .create({ userId: _id, name, currency, amount })
-    .then((newAccount) => {
+  const { accountId, amount, isIncome } = req.body;
+  movements
+    .findOne({ accountId }, {}, { sort: { createdAt: -1 } })
+    .then((doc) => {
       movements
         .create({
-          accountId: newAccount._id,
-          accountPrev: 0,
+          accountId,
+          accountPrev: doc.accountPrev + doc.amount * (doc.isIncome ? 1 : -1),
           amount,
           isIncome,
-          name: 'Valor inicial',
         })
-        .then(() => {
-          res.status(201).json({ success: true, accounts: newAccount });
+        .then((newMovement) => {
+          res.status(201).json({ success: true, movement: newMovement });
         });
     })
     .catch(next);
@@ -70,21 +73,12 @@ router.put('/', (req, res, next) => {
 });
 
 router.delete('/', (req, res, next) => {
-  const { _id } = req.user;
-  const { accountId } = req.body;
-  const realAccountId = Mongoose.Types.ObjectId(accountId);
+  const { movementId } = req.body;
+  const realMovementId = Mongoose.Types.ObjectId(movementId);
   accounts
-    .updateOne(
-      { userId: _id, _id: realAccountId },
-      { $set: { isActive: false } }
-    )
+    .updateOne({ _id: realMovementId }, { $set: { isActive: false } })
     .then(() => {
-      movements
-        .updateMany({ accountId: realAccountId }, { $set: { isActive: false } })
-        .then(() => {
-          res.status(200).json({ success: true });
-        })
-        .catch(next);
+      res.status(200).json({ success: true });
     })
     .catch(next);
 });

@@ -7,6 +7,7 @@ const mongoose = require('mongoose');
 const rfs = require('rotating-file-stream');
 const accounts = require('./routers/accounts.router');
 const auth = require('./routers/auth.router');
+const movements = require('./routers/movements.router');
 const middlewares = require('./middlewares');
 
 const PORT = process.env.PORT || 3001;
@@ -36,11 +37,20 @@ const accessLogStream = rfs.createStream('access.log', {
   interval: '1d',
   path: path.join(__dirname, '..', 'logs'),
 });
-
-app.use(morgan('combined', { stream: accessLogStream }));
+if (process.env.ENV === 'production') {
+  app.use(
+    morgan(
+      '[:date[clf]] :method :url :status :response-time ms - :res[content-length] ":user-agent"',
+      { stream: accessLogStream }
+    )
+  );
+} else {
+  app.use(morgan('dev'));
+}
 
 app.use('/auth', auth);
 app.use('/accounts', accounts);
+app.use('/movements', movements);
 
 app.use(middlewares.NotFound);
 
