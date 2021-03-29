@@ -13,21 +13,14 @@ router.get('/', (req, res, next) => {
   accounts
     .find({ userId: _id, isActive: true })
     .then(async (userAccounts) => {
-      const cleanedAccounts = await Promise.all(
-        userAccounts.map(async (doc) => {
-          const movement = await movements.findOne(
-            { accountId: doc._id },
-            {},
-            { sort: { createdAt: -1 } }
-          );
-          return {
-            name: doc.name,
-            currency: doc.currency,
-            accountId: doc._id,
-            movement,
-          };
-        })
-      );
+      const cleanedAccounts = userAccounts.map((doc) => ({
+        name: doc.name,
+        currency: doc.currency,
+        balance: doc.balance,
+        hasMinimum: doc.hasMinimum,
+        minimum: doc.minimum,
+        accountId: doc._id,
+      }));
       res.status(200).json({ success: true, accounts: cleanedAccounts });
     })
     .catch(next);
@@ -35,21 +28,18 @@ router.get('/', (req, res, next) => {
 
 router.post('/', (req, res, next) => {
   const { _id } = req.user;
-  const { name, currency, amount, isIncome } = req.body;
+  const { name, currency, balance, hasMinimum, minimum } = req.body;
   accounts
-    .create({ userId: _id, name, currency, amount })
+    .create({
+      userId: _id,
+      name,
+      currency,
+      balance,
+      hasMinimum,
+      minimum,
+    })
     .then((newAccount) => {
-      movements
-        .create({
-          accountId: newAccount._id,
-          accountPrev: 0,
-          amount,
-          isIncome,
-          name: 'Valor inicial',
-        })
-        .then(() => {
-          res.status(201).json({ success: true, accounts: newAccount });
-        });
+      res.status(201).json({ success: true, account: newAccount });
     })
     .catch(next);
 });
