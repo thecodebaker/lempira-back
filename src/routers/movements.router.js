@@ -1,4 +1,5 @@
 const express = require('express');
+const axios = require('axios');
 const Mongoose = require('mongoose');
 const middlewares = require('../middlewares');
 const accounts = require('../models/account.model');
@@ -7,6 +8,19 @@ const movements = require('../models/movement.model');
 const router = express.Router();
 
 router.use(middlewares.checkJWT);
+router.get('/exchanges', async (req, res) => {
+  const HNL = await axios.get(
+    `https://free.currconv.com/api/v7/convert?apiKey=${process.env.API_KEY}&q=HNL_USD,HNL_EUR&compact=ultra`
+  );
+  const USD = await axios.get(
+    `https://free.currconv.com/api/v7/convert?apiKey=${process.env.API_KEY}&q=USD_HNL,USD_EUR&compact=ultra`
+  );
+  const EUR = await axios.get(
+    `https://free.currconv.com/api/v7/convert?apiKey=${process.env.API_KEY}&q=EUR_USD,EUR_HNL&compact=ultra`
+  );
+  const exchanges = { ...HNL.data, ...USD.data, ...EUR.data };
+  res.status(200).json({ success: true, exchanges });
+});
 
 router.get('/', (req, res, next) => {
   const { _id } = req.user;
@@ -16,7 +30,7 @@ router.get('/', (req, res, next) => {
       const cleanedAccounts = await Promise.all(
         userAccounts.map(async (doc) => {
           const movimientos = await movements.find(
-            { accountId: doc._id },
+            { accountId: doc._id, isActive: true },
             {},
             { sort: { createdAt: 1 } }
           );
@@ -39,20 +53,24 @@ router.get('/', (req, res, next) => {
 });
 
 router.post('/', (req, res, next) => {
-  const { accountId, amount, isIncome } = req.body;
+  const { accountId, amount, isIncome, note } = req.body;
   movements
-    .findOne({ accountId }, {}, { sort: { createdAt: -1 } })
-    .then((doc) => {
-      movements
-        .create({
-          accountId,
-          accountPrev: doc.accountPrev + doc.amount * (doc.isIncome ? 1 : -1),
-          amount,
-          isIncome,
-        })
-        .then((newMovement) => {
+    .create({
+      accountId,
+      amount,
+      isIncome,
+      note,
+    })
+    .then((newMovement) => {
+      accounts
+        .updateOne(
+          { _id: accountId },
+          { $inc: { balance: (isIncome ? 1 : -1) * amount } }
+        )
+        .then(() => {
           res.status(201).json({ success: true, movement: newMovement });
-        });
+        })
+        .catch(next);
     })
     .catch(next);
 });
@@ -75,10 +93,18 @@ router.put('/', (req, res, next) => {
 router.delete('/', (req, res, next) => {
   const { movementId } = req.body;
   const realMovementId = Mongoose.Types.ObjectId(movementId);
-  accounts
-    .updateOne({ _id: realMovementId }, { $set: { isActive: false } })
-    .then(() => {
-      res.status(200).json({ success: true });
+  movements
+    .findOneAndUpdate({ _id: realMovementId }, { $set: { isActive: false } })
+    .then((movement) => {
+      accounts
+        .updateOne(
+          { _id: movement.accountId },
+          { $inc: { balance: (movement.isIncome ? -1 : 1) * movement.amount } }
+        )
+        .then(() => {
+          res.status(201).json({ success: true, movement });
+        })
+        .catch(next);
     })
     .catch(next);
 });

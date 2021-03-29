@@ -3,10 +3,9 @@ const mongoose = require('mongoose');
 const movementSchema = new mongoose.Schema(
   {
     accountId: { type: mongoose.ObjectId, required: true },
-    accountPrev: { type: Number, required: true },
     amount: { type: Number, required: true },
     isIncome: { type: Boolean, required: true },
-    name: { type: String, required: true },
+    note: { type: String, required: false },
     isActive: { type: Boolean, required: false, default: true },
   },
   { timestamps: true }
