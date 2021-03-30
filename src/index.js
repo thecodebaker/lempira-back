@@ -12,7 +12,7 @@ const middlewares = require('./middlewares');
 
 const PORT = process.env.PORT || 3001;
 mongoose.connect(
-  `mongodb://${process.env.DB_USER}:${process.env.DB_PASS}@${process.env.DB_HOST}:27017/${process.env.DB_NAME}`,
+  `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@${process.env.DB_HOST}/${process.env.DB_NAME}`,
   {
     useNewUrlParser: true,
     useFindAndModify: false,
