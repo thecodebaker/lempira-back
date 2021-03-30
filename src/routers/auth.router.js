@@ -14,7 +14,7 @@ router.post('/signup', (req, res, next) => {
   user
     .create({ email, password: hash, name })
     .then((doc) => {
-      res.json({ success: true, user: doc.json() });
+      res.json({ success: true, user: doc.toJSON() });
     })
     .catch((err) => {
       next(err);
