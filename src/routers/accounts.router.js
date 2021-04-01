@@ -16,14 +16,18 @@ router.get('/stats/totals/:accountId', (req, res, next) => {
   const realAccountId = Mongoose.Types.ObjectId(accountId);
 
   movements
-    .find({ accountId: realAccountId, isActive: true })
+    .find(
+      { accountId: realAccountId, isActive: true },
+      {},
+      { sort: { createdAt: 1 } }
+    )
     .then((accountMovements) => {
+      console.log(accountMovements);
       const months = accountMovements
         .map((m) => ({
           id: moment(m.createdAt).format('MM/YY'),
           name: moment(m.createdAt).format('MMMM/YY'),
         }))
-        .sort((a, b) => a.id - b.id)
         .filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i);
       const labels = months.map((m) => m.name);
 
@@ -32,7 +36,6 @@ router.get('/stats/totals/:accountId', (req, res, next) => {
           month: moment(m.createdAt).format('MM/YY'),
           amount: (m.isIncome ? 1 : 0) * m.amount,
         }))
-        .sort((a, b) => a.month - b.month)
         .reduce((v, a) => {
           const index = v.findIndex((t) => t.month === a.month);
           return index === -1
@@ -48,7 +51,6 @@ router.get('/stats/totals/:accountId', (req, res, next) => {
           month: moment(m.createdAt).format('MM/YY'),
           amount: (m.isIncome ? 0 : 1) * m.amount,
         }))
-        .sort((a, b) => a.month - b.month)
         .reduce((v, a) => {
           const index = v.findIndex((t) => t.month === a.month);
           return index === -1
