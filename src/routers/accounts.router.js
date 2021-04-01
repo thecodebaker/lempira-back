@@ -58,6 +58,7 @@ router.get('/stats/totals/:accountId', (req, res, next) => {
               );
         }, [])
         .map((v) => v.amount);
+      console.log({ success: true, labels, outcomeData, incomeData });
       res.status(200).json({ success: true, labels, outcomeData, incomeData });
     })
     .catch(next);
