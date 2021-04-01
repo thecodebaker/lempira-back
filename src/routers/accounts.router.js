@@ -22,7 +22,6 @@ router.get('/stats/totals/:accountId', (req, res, next) => {
       { sort: { createdAt: 1 } }
     )
     .then((accountMovements) => {
-      console.log(accountMovements);
       const months = accountMovements
         .map((m) => ({
           id: moment(m.createdAt).format('MM/YY'),
@@ -60,7 +59,6 @@ router.get('/stats/totals/:accountId', (req, res, next) => {
               );
         }, [])
         .map((v) => v.amount);
-      console.log({ success: true, labels, outcomeData, incomeData });
       res.status(200).json({ success: true, labels, outcomeData, incomeData });
     })
     .catch(next);
