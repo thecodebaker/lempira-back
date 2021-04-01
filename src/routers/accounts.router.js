@@ -1,12 +1,67 @@
 const express = require('express');
+const moment = require('moment');
+require('moment/locale/es');
 const Mongoose = require('mongoose');
 const middlewares = require('../middlewares');
 const accounts = require('../models/account.model');
 const movements = require('../models/movement.model');
 
+moment.locale('es');
 const router = express.Router();
 
 router.use(middlewares.checkJWT);
+
+router.get('/stats/totals/:accountId', (req, res, next) => {
+  const { accountId } = req.params;
+  const realAccountId = Mongoose.Types.ObjectId(accountId);
+
+  movements
+    .find({ accountId: realAccountId, isActive: true })
+    .then((accountMovements) => {
+      const months = accountMovements
+        .map((m) => ({
+          id: moment(m.createdAt).format('MM/YY'),
+          name: moment(m.createdAt).format('MMMM/YY'),
+        }))
+        .sort((a, b) => a.id - b.id)
+        .filter((v, i, a) => a.findIndex((t) => t.id === v.id) === i);
+      const labels = months.map((m) => m.name);
+
+      const incomeData = accountMovements
+        .map((m) => ({
+          month: moment(m.createdAt).format('MM/YY'),
+          amount: (m.isIncome ? 1 : 0) * m.amount,
+        }))
+        .sort((a, b) => a.month - b.month)
+        .reduce((v, a) => {
+          const index = v.findIndex((t) => t.month === a.month);
+          return index === -1
+            ? [...v, a]
+            : v.map((e, i) =>
+                i === index ? { ...e, amount: e.amount + a.amount } : e
+              );
+        }, [])
+        .map((v) => v.amount);
+
+      const outcomeData = accountMovements
+        .map((m) => ({
+          month: moment(m.createdAt).format('MM/YY'),
+          amount: (m.isIncome ? 0 : 1) * m.amount,
+        }))
+        .sort((a, b) => a.month - b.month)
+        .reduce((v, a) => {
+          const index = v.findIndex((t) => t.month === a.month);
+          return index === -1
+            ? [...v, a]
+            : v.map((e, i) =>
+                i === index ? { ...e, amount: e.amount + a.amount } : e
+              );
+        }, [])
+        .map((v) => v.amount);
+      res.status(200).json({ success: true, labels, outcomeData, incomeData });
+    })
+    .catch(next);
+});
 
 router.get('/', (req, res, next) => {
   const { _id } = req.user;
