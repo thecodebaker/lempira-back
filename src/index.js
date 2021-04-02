@@ -8,6 +8,7 @@ const rfs = require('rotating-file-stream');
 const accounts = require('./routers/accounts.router');
 const auth = require('./routers/auth.router');
 const movements = require('./routers/movements.router');
+const categories = require('./routers/categories.router');
 const middlewares = require('./middlewares');
 
 const PORT = process.env.PORT || 3001;
@@ -51,6 +52,7 @@ if (process.env.ENV === 'production') {
 app.use('/auth', auth);
 app.use('/accounts', accounts);
 app.use('/movements', movements);
+app.use('/categories', categories);
 
 app.use(middlewares.NotFound);
 

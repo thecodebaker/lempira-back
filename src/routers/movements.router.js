@@ -53,10 +53,11 @@ router.get('/', (req, res, next) => {
 });
 
 router.post('/', (req, res, next) => {
-  const { accountId, amount, isIncome, note } = req.body;
+  const { accountId, categoryId, amount, isIncome, note } = req.body;
   movements
     .create({
       accountId,
+      categoryId,
       amount,
       isIncome,
       note,
@@ -77,12 +78,12 @@ router.post('/', (req, res, next) => {
 
 router.put('/', (req, res, next) => {
   const { _id } = req.user;
-  const { accountId, name, currency } = req.body;
+  const { accountId, name, currency, categoryId } = req.body;
   const realAccountId = Mongoose.Types.ObjectId(accountId);
   accounts
     .updateOne(
       { userId: _id, _id: realAccountId, isActive: true },
-      { $set: { name, currency } }
+      { $set: { name, currency, categoryId } }
     )
     .then(() => {
       res.status(200).json({ success: true });
