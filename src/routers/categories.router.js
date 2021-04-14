@@ -12,7 +12,12 @@ router.get('/', (req, res, next) => {
   category
     .find({ $or: [{ userId: '-1' }, { userId: String(_id) }] })
     .then((data) => {
-      res.status(200).json({ success: true, categories: data });
+      const sorted = data.sort((a, b) => (a.name > b.name ? 1 : -1));
+      const appInfo = sorted.filter((cat) => cat.userId === '-1');
+      const userInfo = sorted.filter((cat) => cat.userId === String(_id));
+      res
+        .status(200)
+        .json({ success: true, categories: [...userInfo, ...appInfo] });
     })
     .catch(next);
 });
